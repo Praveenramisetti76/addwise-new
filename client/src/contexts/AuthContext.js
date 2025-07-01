@@ -109,17 +109,14 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Login user
-  const login = async (email, password) => {
+  const login = async (email, password, uniqueCode) => {
     try {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
-      
-      const response = await api.post('/api/auth/signin', { email, password });
-      
+      const response = await api.post('/api/auth/signin', { email, password, uniqueCode });
       dispatch({
         type: AUTH_ACTIONS.LOGIN_SUCCESS,
         payload: response.data
       });
-
       toast.success('Login successful!');
       return { success: true };
     } catch (error) {
@@ -134,14 +131,11 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     try {
       dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
-      
       const response = await api.post('/api/auth/signup', userData);
-      
       dispatch({
         type: AUTH_ACTIONS.LOGIN_SUCCESS,
         payload: response.data
       });
-
       toast.success('Registration successful!');
       return { success: true };
     } catch (error) {

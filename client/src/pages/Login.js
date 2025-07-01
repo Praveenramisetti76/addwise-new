@@ -14,7 +14,8 @@ const schema = yup.object().shape({
   password: yup
     .string()
     .required('Password is required')
-    .min(6, 'Password must be at least 6 characters')
+    .min(6, 'Password must be at least 6 characters'),
+  uniqueCode: yup.string().notRequired(), // Will be required dynamically
 });
 
 const Login = () => {
@@ -23,6 +24,8 @@ const Login = () => {
   const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [emailValue, setEmailValue] = useState('');
+  const [role, setRole] = useState('user');
 
   const {
     register,
@@ -45,7 +48,7 @@ const Login = () => {
     setIsSubmitting(true);
     
     try {
-      const result = await login(data.email, data.password);
+      const result = await login(data.email, data.password, data.uniqueCode);
       
       if (result.success) {
         const from = location.state?.from?.pathname || '/dashboard';
@@ -102,7 +105,9 @@ const Login = () => {
                   id="email"
                   type="email"
                   autoComplete="email"
-                  {...register('email')}
+                  {...register('email', {
+                    onChange: (e) => setEmailValue(e.target.value)
+                  })}
                   className={`block w-full pl-10 pr-3 py-3 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
                     errors.email ? 'border-red-300' : 'border-gray-300'
                   }`}
@@ -149,6 +154,27 @@ const Login = () => {
                 <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
               )}
             </div>
+
+            {/* Unique Code Field (only for admin/superadmin) */}
+            {(role === 'admin' || role === 'superadmin') && (
+              <div>
+                <label htmlFor="uniqueCode" className="block text-sm font-medium text-gray-700 mb-2">
+                  Unique Code
+                </label>
+                <input
+                  id="uniqueCode"
+                  type="text"
+                  {...register('uniqueCode', {
+                    required: 'Unique code is required for admin/superadmin',
+                  })}
+                  className={`block w-full py-3 px-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${errors.uniqueCode ? 'border-red-300' : 'border-gray-300'}`}
+                  placeholder="Enter unique code for admin/superadmin"
+                />
+                {errors.uniqueCode && (
+                  <p className="mt-1 text-sm text-red-600">{errors.uniqueCode.message}</p>
+                )}
+              </div>
+            )}
 
             {/* Root Error */}
             {errors.root && (

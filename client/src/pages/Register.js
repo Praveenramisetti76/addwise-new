@@ -41,7 +41,16 @@ const schema = yup.object().shape({
     .max(100, 'Department cannot exceed 100 characters'),
   position: yup
     .string()
-    .max(100, 'Position cannot exceed 100 characters')
+    .max(100, 'Position cannot exceed 100 characters'),
+  role: yup
+    .string()
+    .oneOf(['user', 'admin', 'superadmin'], 'Invalid role')
+    .required('Role is required'),
+  uniqueCode: yup.string().when('role', {
+    is: (val) => val === 'admin' || val === 'superadmin',
+    then: (schema) => schema.required('Unique code is required'),
+    otherwise: (schema) => schema.notRequired(),
+  })
 });
 
 const Register = () => {
@@ -50,6 +59,7 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedRole, setSelectedRole] = useState('user');
 
   const {
     register,
@@ -72,8 +82,8 @@ const Register = () => {
     setIsSubmitting(true);
     
     try {
-      // Remove confirmPassword from data
       const { confirmPassword, ...userData } = data;
+      userData.role = selectedRole;
       
       const result = await registerUser(userData);
       
@@ -343,6 +353,46 @@ const Register = () => {
                 )}
               </div>
             </div>
+
+            {/* Role Selector */}
+            <div>
+              <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
+                Select Role
+              </label>
+              <select
+                id="role"
+                {...register('role')}
+                value={selectedRole}
+                onChange={e => setSelectedRole(e.target.value)}
+                className={`block w-full py-3 px-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${errors.role ? 'border-red-300' : 'border-gray-300'}`}
+              >
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+                <option value="superadmin">Super Admin</option>
+              </select>
+              {errors.role && (
+                <p className="mt-1 text-sm text-red-600">{errors.role.message}</p>
+              )}
+            </div>
+
+            {/* Unique Code Field (only for admin/superadmin) */}
+            {(selectedRole === 'admin' || selectedRole === 'superadmin') && (
+              <div>
+                <label htmlFor="uniqueCode" className="block text-sm font-medium text-gray-700 mb-2">
+                  Unique Code
+                </label>
+                <input
+                  id="uniqueCode"
+                  type="text"
+                  {...register('uniqueCode')}
+                  className={`block w-full py-3 px-3 border rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${errors.uniqueCode ? 'border-red-300' : 'border-gray-300'}`}
+                  placeholder="Enter unique code for admin/superadmin"
+                />
+                {errors.uniqueCode && (
+                  <p className="mt-1 text-sm text-red-600">{errors.uniqueCode.message}</p>
+                )}
+              </div>
+            )}
 
             {/* Root Error */}
             {errors.root && (

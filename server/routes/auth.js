@@ -47,7 +47,21 @@ const signupValidation = [
     .optional()
     .trim()
     .isLength({ max: 100 })
-    .withMessage('Position cannot exceed 100 characters')
+    .withMessage('Position cannot exceed 100 characters'),
+  body('role')
+    .optional()
+    .isIn(['user', 'admin', 'superadmin'])
+    .withMessage('Role must be user, admin, or superadmin'),
+  body('uniqueCode')
+    .optional()
+    .custom((value, { req }) => {
+      if ((req.body.role === 'admin' || req.body.role === 'superadmin')) {
+        if (value !== 'addwise') {
+          throw new Error('Unique code is required and must be correct for admin/superadmin');
+        }
+      }
+      return true;
+    }),
 ];
 
 const signinValidation = [
@@ -57,7 +71,19 @@ const signinValidation = [
     .withMessage('Please enter a valid email address'),
   body('password')
     .notEmpty()
-    .withMessage('Password is required')
+    .withMessage('Password is required'),
+  body('uniqueCode')
+    .optional()
+    .custom(async (value, { req }) => {
+      // Find user by email to check role
+      const user = await User.findOne({ email: req.body.email });
+      if (user && (user.role === 'admin' || user.role === 'superadmin')) {
+        if (value !== 'addwise') {
+          throw new Error('Unique code is required and must be correct for admin/superadmin');
+        }
+      }
+      return true;
+    }),
 ];
 
 // @route   POST /api/auth/signup
@@ -74,7 +100,7 @@ router.post('/signup', signupValidation, async (req, res) => {
       });
     }
 
-    const { firstName, lastName, email, password, phoneNumber, department, position } = req.body;
+    const { firstName, lastName, email, password, phoneNumber, department, position, role } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findByEmail(email);
@@ -94,7 +120,7 @@ router.post('/signup', signupValidation, async (req, res) => {
       phoneNumber,
       department,
       position,
-      role: 'user' // Default role
+      role: role || 'user'
     });
 
     await user.save();
