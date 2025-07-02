@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const QrCode = require('../models/QrCode');
 
 const router = express.Router();
 
@@ -357,6 +358,30 @@ router.get('/dashboard', [authenticateToken, requireAdmin], async (req, res) => 
       message: 'Server error while fetching dashboard stats',
       code: 'DASHBOARD_STATS_ERROR'
     });
+  }
+});
+
+// @route   POST /api/admin/qrcodes
+// @desc    Save generated QR codes
+// @access  Admin only
+router.post('/qrcodes', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'admin' && req.user.role !== 'superadmin') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+    const { codes } = req.body;
+    if (!Array.isArray(codes) || codes.length === 0) {
+      return res.status(400).json({ message: 'No codes provided' });
+    }
+    const qrDocs = codes.map(code => ({ code, createdBy: req.user._id }));
+    const savedCodes = await QrCode.insertMany(qrDocs, { ordered: false });
+    res.status(201).json({ success: true, codes: savedCodes });
+  } catch (error) {
+    // Handle duplicate codes gracefully
+    if (error.code === 11000) {
+      return res.status(409).json({ message: 'Some codes already exist' });
+    }
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 

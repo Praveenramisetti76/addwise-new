@@ -65,6 +65,7 @@ export const adminAPI = {
   activateUser: (userId) => api.post(`/api/admin/users/${userId}/activate`),
   deactivateUser: (userId) => api.post(`/api/admin/users/${userId}/deactivate`),
   getDashboardStats: () => api.get('/api/admin/dashboard'),
+  saveQrCodes: (codes) => api.post('/api/admin/qrcodes', { codes }),
 };
 
 // Super Admin API

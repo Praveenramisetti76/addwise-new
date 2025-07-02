@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaUsers, FaChartBar, FaCog } from 'react-icons/fa';
 import { QRCodeCanvas } from 'qrcode.react';
+import { adminAPI } from '../services/api';
 
 const AdminDashboard = () => {
   const [qrCount, setQrCount] = useState(1);
@@ -26,14 +27,23 @@ const AdminDashboard = () => {
     return code;
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     const newCodes = [];
     for (let i = 0; i < qrCount; i++) {
       newCodes.push(generateUniqueCode());
     }
-    const updatedCodes = [...codes, ...newCodes];
-    setCodes(updatedCodes);
-    saveCodes(updatedCodes);
+    try {
+      // Save to backend
+      const response = await adminAPI.saveQrCodes(newCodes);
+      const savedCodes = response.data.codes.map(qr => qr.code);
+      const updatedCodes = [...codes, ...savedCodes];
+      setCodes(updatedCodes);
+      // Optionally, you can still save to localStorage for offline use
+      saveCodes(updatedCodes);
+    } catch (error) {
+      // Handle error (e.g., show toast)
+      console.error('Failed to save QR codes:', error);
+    }
   };
 
   const handleDelete = (idx) => {
